@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Form</title>
+</head>
+<body>
+<h2>Upload Form</h2>
+<form action="/api/v1/upload" method="post" enctype="multipart/form-data">
+    <label for="jsonFile">Upload JSON File:</label><br>
+    <input type="file" id="jsonFile" name="jsonFile"><br><br>
+
+    <label for="jsonData">JSON Data:</label><br>
+    <textarea id="jsonData" name="jsonData" rows="4" cols="50"></textarea><br><br>
+
+    <input type="submit" value="Submit">
+</form>
+</body>
+</html>
