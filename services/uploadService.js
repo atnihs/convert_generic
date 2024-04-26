@@ -4,8 +4,6 @@ const {join} = require("path")
 const fs = require("fs")
 const xlsx = require('xlsx')
 
-const fields = ['id', 'displayName', 'entity', 'dataSource', 'createDate', 'updateDate', 'displaySearchProperties']
-
 const convertString = async (data) => {
     try {
         let msg;
@@ -43,6 +41,7 @@ const handleData = async (array) => {
     const mappedData = {};
     array.forEach(item => {
         if (!mappedData[item.source.entity]) {
+            const parseProps = parseDisplaySearchProperties(item.source.displaySearchProperties)
             mappedData[item.source.entity] = [{
                 id: item.source.id,
                 displayName: item.source.displayName,
@@ -50,9 +49,10 @@ const handleData = async (array) => {
                 dataSource: item.source.dataSource,
                 createDate: item.source.createDate,
                 updateDate: item.source.updateDate,
-                displaySearchProperties: item.source.displaySearchProperties
+                ...parseProps
             }]
         } else {
+            const parseProps = parseDisplaySearchProperties(item.source.displaySearchProperties)
             mappedData[item.source.entity].push({
                 id: item.source.id,
                 displayName: item.source.displayName,
@@ -60,11 +60,19 @@ const handleData = async (array) => {
                 dataSource: item.source.dataSource,
                 createDate: item.source.createDate,
                 updateDate: item.source.updateDate,
-                displaySearchProperties: item.source.displaySearchProperties
+                ...parseProps
             })
         }
     })
     return mappedData;
+}
+
+function parseDisplaySearchProperties(displaySearchProperties) {
+    const data = {}
+    displaySearchProperties.forEach(property => {
+        data[property.propertyName] = property.propertyValue.length > 0 ? property.propertyValue.join(",") : null;
+    });
+    return data
 }
 
 const createExcel = async(data, uploadDir) => {
@@ -73,6 +81,7 @@ const createExcel = async(data, uploadDir) => {
 
         for (const type in data) {
             if (data.hasOwnProperty(type)) {
+                const fields = Object.keys(data[type][0])
                 const entityData = data[type]
                 const entityName = type.split('.')[2]
                 const dataSheet = []
@@ -81,11 +90,7 @@ const createExcel = async(data, uploadDir) => {
                 entityData.forEach(item => {
                     const row = []
                     fields.forEach(field => {
-                        if (field === 'displaySearchProperties') {
-                            row.push(JSON.stringify(item[field]))
-                        } else {
-                            row.push(item[field])
-                        }
+                        row.push(item[field])
                     })
                     dataSheet.push(row)
                 })
@@ -98,19 +103,11 @@ const createExcel = async(data, uploadDir) => {
                         case 0:
                             ws['!cols'][index] = { wch: 40 }
                             break
-                        case 1:
-                        case 2:
-                        case 3:
-                            ws['!cols'][index] = { wch: 20 }
-                            break
                         case 4:
                         case 5:
                             ws['!cols'][index] = { wch: 30 }
                             break
-                        case 6:
-                            ws['!cols'][index] = { wch: 50 }
-                            break
-                        default: ws['!cols'][index] = { wch: 10 }
+                        default: ws['!cols'][index] = { wch: 20 }
                     }
                 })
 
