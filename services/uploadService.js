@@ -1,5 +1,5 @@
 const { RESPONSE} = require('../constants')
-const { Parser } = require('@json2csv/plainjs')
+// const { Parser } = require('@json2csv/plainjs')
 const {join} = require("path")
 const fs = require("fs")
 const xlsx = require('xlsx')
@@ -20,11 +20,8 @@ const convertString = async (data) => {
             if (!fs.existsSync(uploadDir)) {
                 fs.mkdirSync(uploadDir, { recursive: true})
             }
-            try {
-                msg = await createExcel(extractData, uploadDir)
-            } catch (err) {
-                console.log({message: err})
-            }
+
+            msg = await createExcel(extractData, uploadDir)
         } catch (err) {
             console.log({message: err})
             return {status: false, message: RESPONSE.MESSAGE.INVALID_JSON_FORMAT}
@@ -133,7 +130,7 @@ function isJSON(content) {
 const convertFile = async (req) => {
     let msg;
     try {
-        const { mimetype, path } = req.file
+        const { mimetype, path } = req.file;
         if (!fs.existsSync(path) || mimetype !== 'application/json') {
             return { status: false, message: RESPONSE.MESSAGE.INVALID_DATA_TYPE }
         }

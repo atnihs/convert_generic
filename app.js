@@ -16,6 +16,7 @@ app.use(express.urlencoded({ extended: false }))
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(cookieParser())
 app.use(express.static('public'))
+app.use(express.static(join(__dirname, '..', 'html')))
 
 app.get('/upload', (req, res) => {
     res.sendFile(join(__dirname, 'public', 'upload.html'));
