@@ -2,72 +2,121 @@ const express = require('express')
 const router = express.Router()
 const { DOMParser } = require('@xmldom/xmldom')
 const xpath = require('xpath')
-const http = require('http')
-const https = require('https')
 const axios = require('axios')
 
 const { join } = require('path');
 const { parseString } = require('xml2js')
 const parser = require('xml2json')
+const multer = require("multer");
+const fs = require('fs')
 
-router.get('/collaboraURL', (req, res) => {
-    let hostName = req.query.server
-    let httpClient = hostName.startsWith('https') ? https : http
-    let data = ''
+router.get('/connectWopi', async (req, res) => {
+    try {
+        let hostName = req.query.server
+        let url = hostName + '/hosting/discovery'
 
-    httpClient.get(hostName + '/hosting/discovery', (response) => {
-        response.on('data', (chunk) => data += chunk.toString())
-        response.on('end', () => {
-            if (response.statusCode !== 200) {
-                let err = 'Request failed. Satus Code: ' + response.statusCode;
-                response.resume();
-                res.status(response.statusCode).send(err);
-                console.log(err)
-                return;
-            }
-            if (!response.complete) {
-                let err = 'No able to retrieve the discovery.xml file from the Collabora Online server with the submitted address.';
-                res.status(404).send(err);
-                console.log(err);
-                return;
-            }
-            let doc = new DOMParser().parseFromString(data);
-            if (!doc) {
-                let err = 'The retrieved discovery.xml file is not a valid XML file'
-                res.status(404).send(err)
-                console.log(err);
-                return;
-            }
-            let mimeType = 'text/plain';
-            let nodes = xpath.select("/wopi-discovery/net-zone/app[@name='" + mimeType + "']/action", doc);
-            if (!nodes || nodes.length !== 1) {
-                let err = 'The requested mime type is not handled'
-                res.status(404).send(err);
-                console.log(err);
-                return;
-            }
-            let onlineUrl = nodes[0].getAttribute('urlsrc');
-            res.json({
-                url: onlineUrl,
-                token: 'test'
-            });
+        const response = await axios.get(url)
+        console.log(response.data)
+
+        let { data } = response
+
+        if (response.status !== 200) {
+            let err = 'Request failed. Status Code: ' + response.status
+            console.log(err)
+            return res.status(response.status).send(err)
+        }
+
+        if (!response.data) {
+            let err = 'No able to retrieve the discovery.xml file from the Collabora Online server with the submitted address.'
+            console.log(err)
+            return res.status(404).send(err)
+        }
+
+        let parser = new DOMParser()
+        let doc = parser.parseFromString(data, 'text/xml')
+
+        if (!doc) {
+            let err = 'The retrieved discovery.xml file is not a valid XML file'
+            console.log(err)
+            return res.status(404).send(err)
+        }
+
+        let mimeType = 'text/plain'
+        let nodes = xpath.select("/wopi-discovery/net-zone/app[@name='" + mimeType + "']/action", doc)
+
+        if (!nodes || nodes.length !== 1) {
+            let err = 'The requested mime type is not handled'
+            console.log(err)
+            return res.status(404).send(err)
+        }
+
+        let onlineUrl = nodes[0].getAttribute('urlsrc')
+        res.json({
+            url: onlineUrl,
+            token: 'test'
         })
-        response.on('error', (err) => {
-            res.status(404).send('Request error: ' + err);
-            console.log('Request error: ' + err.message);
-        });
-    })
+    } catch (e) {
+        console.log("Error: ", e)
+        res.status(404).send('Request error: ' + e);
+    }
 })
 
-router.get('/files/:fileId', (req, res) => {
-    console.log('file id: ' + req.params.fileId);
-    res.json({
-        BaseFileName: join(__dirname, '..', 'test/Report-22042024.docx'),
-        Size: 11,
-        UserId: 1,
-        UserCanWrite: true,
-        EnableInsertRemoteImage: true,
-    });
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'uploads');
+    },
+    filename: function (req, file, cb) {
+        cb(null, file.originalname);
+    }
+});
+const upload = multer({ storage: storage });
+
+router.post('/upload', upload.single('file'), async (req, res) => {
+    const file = req.file
+
+    if (!file) {
+        res.status(400).send('No file uploaded.')
+        return
+    }
+
+    const fileStream = fs.createReadStream(file.path)
+    const formData = new FormData()
+    formData.append('file', fileStream)
+
+    try {
+        console.log({ formData })
+        const response = await axios.post('http://localhost:9980/lool/convert-to/png', formData, {
+            headers: formData.getHeaders()
+        })
+        res.send(response.data)
+    } catch (error) {
+        console.error('Error uploading file:', error);
+        res.status(500).send('Error uploading file.');
+    }
+});
+
+
+router.get('/files/:fileId', async (req, res) => {
+    // console.log('file id: ' + req.params.fileId);
+    // res.json({
+    //     BaseFileName: join(__dirname, '..', 'test/Report-22042024.docx'),
+    //     Size: 11,
+    //     UserId: 1,
+    //     UserCanWrite: true,
+    //     EnableInsertRemoteImage: true,
+    // });
+    try {
+        const response = await axios.post('http://10.8.86.99:9980/cool/convert-to/docx')
+
+
+        const data = response
+
+        console.log({ data })
+        res.json({1: "Hello World"})
+    } catch (e) {
+        console.log("Error: ", e)
+        res.status(404).send('Request error: ' + e);
+    }
 });
 
 router.get('/getXmlData', async (req, res) => {

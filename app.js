@@ -22,7 +22,12 @@ app.get('/upload', (req, res) => {
     res.sendFile(join(__dirname, 'public', 'upload.html'));
 });
 
-app.use('/api/v1', routes)
+app.get('/wopi_test', (req, res) => {
+    res.sendFile(join(__dirname, 'public', 'wopi.html'));
+});
+
+app.use('/', routes)
+// app.use('/api/v1', routes)
 
 app.get('/', (req, res) => {
     res.send( "Hello World")
