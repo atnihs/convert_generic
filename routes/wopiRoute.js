@@ -97,26 +97,11 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 
 
 router.get('/files/:fileId', async (req, res) => {
-    // console.log('file id: ' + req.params.fileId);
-    // res.json({
-    //     BaseFileName: join(__dirname, '..', 'test/Report-22042024.docx'),
-    //     Size: 11,
-    //     UserId: 1,
-    //     UserCanWrite: true,
-    //     EnableInsertRemoteImage: true,
-    // });
-    try {
-        const response = await axios.post('http://10.8.86.99:9980/cool/convert-to/docx')
-
-
-        const data = response
-
-        console.log({ data })
-        res.json({1: "Hello World"})
-    } catch (e) {
-        console.log("Error: ", e)
-        res.status(404).send('Request error: ' + e);
-    }
+    console.log('file id: ' + req.params.fileId);
+    res.json({
+        BaseFileName: "test.txt",
+        Size: 11,
+    });
 });
 
 router.get('/getXmlData', async (req, res) => {
